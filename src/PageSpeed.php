@@ -76,8 +76,8 @@ class PageSpeed
 
 						$oldPathWay = $manifestList[2][$index];
 
-						if ($this->cleanQueries !== false){
-							$oldPathWay = strtok ($oldPathWay,'?');
+						if ($this->cleanQueries !== false) {
+							$oldPathWay = strtok($oldPathWay, '?');
 						}
 
 						$oldPathWay = urldecode($oldPathWay);
@@ -324,18 +324,25 @@ EOL;
 
 	}
 
-	public function rrmdir($dir)
+	public function rrmdir($path)
 	{
-		if (is_dir($dir)) {
-			$objects = scandir($dir);
-			foreach ($objects as $object) {
-				if ($object != "." && $object != "..") {
-					if (filetype($dir . "/" . $object) == "dir") $this->rrmdir($dir . "/" . $object); else unlink($dir . "/" . $object);
+		try {
+			$iterator = new \DirectoryIterator($path);
+			foreach ($iterator as $fileinfo) {
+				if ($fileinfo->isDot()) continue;
+				if ($fileinfo->isDir()) {
+					if ($this->rrmdir($fileinfo->getPathname()))
+						@rmdir($fileinfo->getPathname());
+				}
+				if ($fileinfo->isFile()) {
+					@unlink($fileinfo->getPathname());
 				}
 			}
-			reset($objects);
-			rmdir($dir);
+		} catch (\Exception $e) {
+			return false;
 		}
+
+		return true;
 	}
 
 	public function rsearch($folder, $pattern)
