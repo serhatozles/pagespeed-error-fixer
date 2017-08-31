@@ -16,6 +16,7 @@ class PageSpeed
 	public $discardImageDiffSize = true;
 	public $console = false;
 	public $url = null;
+	public $baseUrl = false;
 	public $mobile = false;
 	public $googleUrl = 'https://developers.google.com/speed/pagespeed/insights/optimizeContents?url={url}&strategy={mobile}';
 
@@ -62,6 +63,8 @@ class PageSpeed
 
 		$this->fileSave($this->getUrl(), $saveFile);
 
+		$this->baseUrl = $this->baseUrl === false ? $this->url : $this->baseUrl;
+
 		if (is_file($saveFile)) {
 
 			$zip = new \ZipArchive();
@@ -85,7 +88,7 @@ class PageSpeed
 						$cleanNewPath = $randName . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
 						$cleanOldPath = str_replace(
 							[
-								$this->url,
+								$this->baseUrl,
 								'/',
 							],
 							[
@@ -102,7 +105,7 @@ class PageSpeed
 						$discard = false;
 
 						list($newW, $newH) = getimagesize($newPath);
-						if (is_file($oldPath)) {
+						if (is_file($oldPath) && $this->discardImageDiffSize !== false) {
 							list($oldW, $oldH) = getimagesize($oldPath);
 							if ($newW !== $oldW || $newH !== $oldH) $discard = true;
 						}

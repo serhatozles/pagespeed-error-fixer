@@ -21,6 +21,14 @@ if(empty($url)){
 }
 $fix->url = $url;
 
+echo "Base Url(default:false, means same url parameter.): ";
+$baseUrl = trim(fgets(STDIN));
+$fix->baseUrl = ($baseUrl === "f" || $baseUrl === "false" || empty($baseUrl)) ? false : $baseUrl;
+
+echo "Mobile(default:false): ";
+$mobile = trim(fgets(STDIN));
+$fix->mobile = $mobile === "true" ? true : false;
+
 echo "Discard Different Size Images(default:true): ";
 $discardImageDiffSize = trim(fgets(STDIN));
 $fix->discardImageDiffSize = $discardImageDiffSize === "false" ? false : true;
