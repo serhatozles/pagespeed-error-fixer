@@ -25,6 +25,10 @@ echo "Base Url(default:false, means same url parameter.): ";
 $baseUrl = trim(fgets(STDIN));
 $fix->baseUrl = ($baseUrl === "f" || $baseUrl === "false" || empty($baseUrl)) ? false : $baseUrl;
 
+echo "Clean Url Queries(default:true, example: 'example.css?v=2' it will remove ?v=2): ";
+$cleanQueries = trim(fgets(STDIN));
+$fix->cleanQueries = $cleanQueries === "false" ? false : true;
+
 echo "Mobile(default:false): ";
 $mobile = trim(fgets(STDIN));
 $fix->mobile = $mobile === "true" ? true : false;

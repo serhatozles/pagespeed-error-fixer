@@ -21,6 +21,7 @@ class PageSpeed
 	public $discardImageDiffSize = true;
 	public $url = null;
 	public $baseUrl = false;
+	public $cleanQueries = true;
 
 	public $maxFileSize = 10485760;
 
@@ -73,6 +74,14 @@ class PageSpeed
 
 					foreach ($manifestList[1] as $index => $path) {
 
+						$oldPathWay = $manifestList[2][$index];
+
+						if ($this->cleanQueries !== false){
+							$oldPathWay = strtok ($oldPathWay,'?');
+						}
+
+						$oldPathWay = urldecode($oldPathWay);
+
 						$cleanNewPath = $randName . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
 						$cleanOldPath = str_replace(
 							[
@@ -83,7 +92,7 @@ class PageSpeed
 								'',
 								DIRECTORY_SEPARATOR,
 							],
-							$manifestList[2][$index]);
+							$oldPathWay);
 						$newPath = getcwd() . DIRECTORY_SEPARATOR . $cleanNewPath;
 						$oldPath = getcwd() . DIRECTORY_SEPARATOR . $cleanOldPath;
 
