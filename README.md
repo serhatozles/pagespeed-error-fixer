@@ -4,7 +4,7 @@ it works on console.
 
 
 ## Usage
--Fix With Url
+-Fix With Url (it works on: Local Server or Web Server)
 --------------------------------------
 #### Parameters:
 - **URL** (string)**:** Website URL. Example: http://www.example.com/
@@ -31,8 +31,9 @@ Backup(default:true):
 ```
 then it will request Google PageSpeed and Download optimized files, than will replace them.
 
--Fix Folder
+-Fix Folder (it works on: Web Server)
 --------------------------------------
+
 #### Parameters:
 - **Folder URL** (string)**:** Website URL. Example: http://www.example.com/
 
@@ -49,7 +50,7 @@ Backup(default:true):
 ```
 then it will request Google PageSpeed and Download optimized files, than will replace them.
 
--Fix Files
+-Fix Files (it works on: Web Server)
 --------------------------------------
 #### Parameters:
 - **Folder URL** (string)**:** Website URL. Example: http://www.example.com/
