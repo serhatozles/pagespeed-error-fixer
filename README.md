@@ -49,7 +49,7 @@ Backup(default:true):
 ```
 then it will request Google PageSpeed and Download optimized files, than will replace them.
 
--Fix FilesS
+-Fix Files
 --------------------------------------
 #### Parameters:
 - **Folder URL** (string)**:** Website URL. Example: http://www.example.com/
@@ -66,3 +66,7 @@ Files(required): img/loading.gif,js/jquery.js,...
 Backup(default:true): 
 ```
 then it will request Google PageSpeed and Download optimized files, than will replace them.
+
+
+## Result
+![Screenshot](https://i.hizliresim.com/1g8GRb.jpg)
