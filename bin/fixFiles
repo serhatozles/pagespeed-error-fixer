@@ -1,0 +1,38 @@
+<?php
+
+use serhatozles\pagespeed\PageSpeed;
+
+// command line utility to PageSpeed
+if (file_exists(__DIR__ . '/../../../autoload.php')) {
+	// if composer install
+	require_once __DIR__ . '/../../../autoload.php';
+} else {
+	require_once __DIR__ . '/../src/PageSpeed.php';
+}
+
+$fix = new PageSpeed;
+$fix->console = true;
+
+url:
+echo "Folder URL(required): ";
+$url = trim(fgets(STDIN));
+if(empty($url)){
+   echo "url is required\r\n";
+    goto url;
+}
+$fix->url = $url;
+
+files:
+echo "Files(required): ";
+$files = trim(fgets(STDIN));
+if (empty($files)) {
+	echo "files is required\r\n";
+	goto files;
+}
+$files = explode(',', $files);
+
+echo "Backup(default:true): ";
+$backup = trim(fgets(STDIN));
+$fix->backup = $backup === "false" ? false : true;
+
+$fix->fixFiles($files);

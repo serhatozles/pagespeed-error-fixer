@@ -8,45 +8,24 @@ namespace serhatozles\pagespeed;
 
 // GLOBAL VARIABLES
 define("BACKUP_FOLDER", getcwd() . DIRECTORY_SEPARATOR . 'backup');
+define("COOKIE_FILE", __DIR__ . DIRECTORY_SEPARATOR . 'cookie.txt');
 
 class PageSpeed
 {
-
-	public $backup = true;
-	public $discardImageDiffSize = true;
 	public $console = false;
-	public $url = null;
-	public $baseUrl = false;
+	public $backup = true;
 	public $mobile = false;
 	public $googleUrl = 'https://developers.google.com/speed/pagespeed/insights/optimizeContents?url={url}&strategy={mobile}';
+	public $googleRefererUrl = 'https://developers.google.com/speed/pagespeed/insights/?hl=tr&url={url}&tab={mobile}';
 
-	public function getUrl()
-	{
-		$url = $this->googleUrl;
-		$url = str_replace('{url}', urlencode($this->url), $url);
-		$url = str_replace('{mobile}', $this->mobile === false ? 'desktop' : 'mobile', $url);
+	public $discardImageDiffSize = true;
+	public $url = null;
+	public $baseUrl = false;
 
-		$ch = curl_init();
+	public $maxFileSize = 10485760;
 
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_HEADER, false);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		$headers = [
-			'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-			'Accept-Language: tr-TR,tr;q=0.8,en-US;q=0.6,en;q=0.4	',
-			'Cache-Control: no-cache',
-			'Upgrade-Insecure-Requests: 1', //Your referrer address
-		];
-
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-		curl_setopt($ch, CURLOPT_URL, $url);
-
-		$out = curl_exec($ch);
-
-		preg_match('/HREF="(.*?)"/si', $out, $getUrl);
-
-		return html_entity_decode($getUrl[1]);
-	}
+	public $folders = [];
+	public $extensions = ['js', 'css', 'png', 'jpg', 'jpeg', 'gif'];
 
 	public function fixUrl()
 	{
@@ -59,11 +38,20 @@ class PageSpeed
 		$randName = uniqid();
 
 		$saveFile = getcwd() . DIRECTORY_SEPARATOR . $randName . '.zip';
-		$extractPath = getcwd() . DIRECTORY_SEPARATOR . $randName;
 
 		$this->fileSave($this->getUrl(), $saveFile);
 
 		$this->baseUrl = $this->baseUrl === false ? $this->url : $this->baseUrl;
+
+		$this->doIt($saveFile);
+	}
+
+	public function doIt($saveFile)
+	{
+
+		$randName = explode('.', basename($saveFile))[0];
+
+		$extractPath = getcwd() . DIRECTORY_SEPARATOR . $randName;
 
 		if (is_file($saveFile)) {
 
@@ -79,7 +67,7 @@ class PageSpeed
 				// get MANIFEST
 				$manifest = file_get_contents($extractPath . DIRECTORY_SEPARATOR . 'MANIFEST');
 
-				preg_match_all('/((?:css|js|image)[a-zA-Z0-9\/._\-\+]+)\: ((?:http).*)/mi', $manifest, $manifestList);
+				preg_match_all('/((?:css|js|image)[a-zA-Z0-9\/._\-\+]+)\: ((?:' . preg_quote($this->baseUrl, '/') . ').*)/mi', $manifest, $manifestList);
 
 				if (count($manifestList[1]) > 0) {
 
@@ -139,7 +127,7 @@ class PageSpeed
 					$this->rrmdir($extractPath);
 
 				} else {
-					echo "couldn't get manifest list";
+					echo "$randName: already optimized\r\n";
 				}
 
 			} else {
@@ -151,21 +139,170 @@ class PageSpeed
 		}
 	}
 
+	public function fixFolder()
+	{
+		if ($this->console === false) {
+			echo 'it doesn\'t work without console.';
+			exit;
+		}
+
+		$files = $this->findFolder($this->extensions);
+
+		return $this->fixFiles($files);
+	}
+
+	public function fixFiles($files)
+	{
+		if (empty($this->url)) {
+			echo 'we need folder location url.';
+			exit;
+		}
+
+		$this->baseUrl = $this->url;
+
+		$headHTML = [];
+		$bodyHTML = [];
+
+		$result = [];
+
+		$headHTMLInner = '';
+		$bodyHTMLInner = '';
+		$fileSizeCounter = 0;
+		$fileCounter = 0;
+
+		foreach ($files as $fileDir) {
+
+			$fileCounter++;
+
+			$filename = basename($fileDir);
+			$filesize = stat(iconv('UTF-8', 'ISO-8859-1', $fileDir))['size'];
+			$pathInfo = pathinfo($filename);
+			$webUrl = str_replace([getcwd() . DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR], [$this->url, '/'], $fileDir);
+
+			if (($fileSizeCounter + $filesize) >= $this->maxFileSize || $fileCounter >= 10) {
+				$headHTML[] = $headHTMLInner;
+				$bodyHTML[] = $bodyHTMLInner;
+				$headHTMLInner = '';
+				$bodyHTMLInner = '';
+				$fileSizeCounter = 0;
+				$fileCounter = 1;
+			}
+
+			if ($filesize < $this->maxFileSize) {
+				$fileSizeCounter += $filesize;
+
+				if ($pathInfo['extension'] === 'js') {
+					$headHTMLInner .= '<script src="' . $webUrl . '"></script>' . "\r\n";
+				}
+				if ($pathInfo['extension'] === 'css') {
+					$headHTMLInner .= '<link href="' . $webUrl . '" rel="stylesheet">' . "\r\n";
+				}
+				if (in_array($pathInfo['extension'], ['png', 'jpg', 'jpeg', 'gif'])) {
+					list($imgW, $imgH) = getimagesize($fileDir);
+					$bodyHTMLInner .= '<img src="' . $webUrl . '" width="' . $imgW . '" height="' . $imgH . '"/>' . "\r\n";
+				}
+			}
+
+		}
+
+		// for the last time.
+		$headHTML[] = $headHTMLInner;
+		$bodyHTML[] = $bodyHTMLInner;
+
+		foreach ($headHTML as $key => $content) {
+
+			$randName = uniqid();
+
+			$createdHTML = <<<EOL
+	<html>
+		<head>
+$content<style>
+				img {
+					display: block!important;
+					float:left!important;
+				}
+			</style></head>
+		<body>$bodyHTML[$key]</body>
+	</html>
+EOL;
+
+			$htmlFileName = getcwd() . DIRECTORY_SEPARATOR . $randName . '.html';
+
+			file_put_contents($htmlFileName, $createdHTML);
+
+			$this->url = $this->baseUrl . $randName . '.html';
+
+			$saveFile = getcwd() . DIRECTORY_SEPARATOR . $randName . '.zip';
+
+			$this->fileSave($this->getUrl(), $saveFile);
+
+			unlink($htmlFileName);
+
+			$this->doIt($saveFile);
+
+		}
+
+		return $result;
+	}
+
+	public function getUrl()
+	{
+		$url = $this->googleUrl;
+		$url = str_replace('{url}', urlencode($this->url), $url);
+		$url = str_replace('{mobile}', $this->mobile === false ? 'desktop' : 'mobile', $url);
+		$referer = $this->googleRefererUrl;
+		$referer = str_replace('{url}', urlencode($this->url), $referer);
+		$referer = str_replace('{mobile}', $this->mobile === false ? 'desktop' : 'mobile', $referer);
+
+		$ch = curl_init();
+
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_HEADER, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		$headers = [
+			'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36 OPR/47.0.2631.71',
+			'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+			'Accept-Language: tr-TR,tr;q=0.8,en-US;q=0.6,en;q=0.4',
+			'Cache-Control: no-cache',
+			'Upgrade-Insecure-Requests: 1', //Your referrer address
+			'referer: ' . $referer,
+		];
+
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		curl_setopt($ch, CURLOPT_COOKIEJAR, \COOKIE_FILE);  //could be empty, but cause problems on some hosts
+		curl_setopt($ch, CURLOPT_COOKIEFILE, \COOKIE_FILE);  //could be empty, but cause problems on some hosts
+		curl_setopt($ch, CURLOPT_URL, $url);
+
+		$out = curl_exec($ch);
+
+		preg_match('/HREF="(.*?)"/si', $out, $getUrl);
+
+		return html_entity_decode($getUrl[1]);
+	}
+
 	public function fileSave($Source, $fileDir)
 	{
+		$referer = $this->googleRefererUrl;
+		$referer = str_replace('{url}', urlencode($this->url), $referer);
+		$referer = str_replace('{mobile}', $this->mobile === false ? 'desktop' : 'mobile', $referer);
+
 		$ch = curl_init();
 
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_HEADER, false);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		$headers = [
+			'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36 OPR/47.0.2631.71',
 			'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-			'Accept-Language: tr-TR,tr;q=0.8,en-US;q=0.6,en;q=0.4	',
+			'Accept-Language: tr-TR,tr;q=0.8,en-US;q=0.6,en;q=0.4',
 			'Cache-Control: no-cache',
 			'Upgrade-Insecure-Requests: 1', //Your referrer address
+			'referer: ' . $referer,
 		];
 
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		curl_setopt($ch, CURLOPT_COOKIEJAR, \COOKIE_FILE);  //could be empty, but cause problems on some hosts
+		curl_setopt($ch, CURLOPT_COOKIEFILE, \COOKIE_FILE);  //could be empty, but cause problems on some hosts
 		curl_setopt($ch, CURLOPT_URL, $Source);
 
 		$out = curl_exec($ch);
@@ -190,6 +327,31 @@ class PageSpeed
 			reset($objects);
 			rmdir($dir);
 		}
+	}
+
+	public function rsearch($folder, $pattern)
+	{
+		$dir = new \RecursiveDirectoryIterator($folder);
+		$ite = new \RecursiveIteratorIterator($dir);
+		$files = new \RegexIterator($ite, $pattern, \RegexIterator::GET_MATCH);
+		$fileList = [];
+		foreach ($files as $file) {
+			$fileList = array_merge($fileList, $file);
+		}
+
+		return $fileList;
+	}
+
+	public function findFolder($extensions)
+	{
+
+		$folders = $this->folders;
+
+		array_walk($folders, function (&$value) {
+			$value = preg_quote(getcwd() . DIRECTORY_SEPARATOR . $value, '/');
+		});
+
+		return $this->rsearch(getcwd(), '/^(?:' . implode('|', $folders) . ').*\.(?:' . implode('|', $extensions) . ')$/');
 	}
 }
 
