@@ -1,19 +1,20 @@
-# pagespeed-error-fixer
+# PageSpeed Error Fixer
 it fix errors for now just css,js and images.
+it works on console.
 
 
 ## Usage
 ### -Fix With Url
 #### Parameters:
-**URL** (string)**:** Website URL. Example: http://www.example.com/
+- **URL** (string)**:** Website URL. Example: http://www.example.com/
 
-**baseUrl** (boolean|string,default: false)**:** if wanna check sub page, you have write here something.
+- **baseUrl** (boolean|string,default: false)**:** if wanna check sub page, you have write here something.
 
-**mobile** (boolean,default: false)**:** PageSpeed check type. if false, pagespeed check on the desktop.
+- **mobile** (boolean,default: false)**:** PageSpeed check type. if false, pagespeed check on the desktop.
 
-**Discard Different Size Images** (boolean,default: true)**:** PageSpeed resized some images sometimes. if you wanna discard them, use true.
+- **Discard Different Size Images** (boolean,default: true)**:** PageSpeed resized some images sometimes. if you wanna discard them, use true.
 
-**Backup** (boolean,default: true)**:** it will create a backup folder, than copy to there changed files.
+- **Backup** (boolean,default: true)**:** it will create a backup folder, than copy to there changed files.
 
 C:\WTServer\WWW\test.proje is public folder of http://test.proje/
 ```
