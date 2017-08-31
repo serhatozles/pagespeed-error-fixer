@@ -21,6 +21,10 @@ if(empty($url)){
 }
 $fix->url = $url;
 
+echo "Discard Different Size Images(default:true): ";
+$discardImageDiffSize = trim(fgets(STDIN));
+$fix->discardImageDiffSize = $discardImageDiffSize === "false" ? false : true;
+
 echo "Backup(default:true): ";
 $backup = trim(fgets(STDIN));
 $fix->backup = $backup === "false" ? false : true;

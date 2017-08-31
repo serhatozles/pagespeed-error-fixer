@@ -13,6 +13,7 @@ class PageSpeed
 {
 
 	public $backup = true;
+	public $discardImageDiffSize = true;
 	public $console = false;
 	public $url = null;
 	public $mobile = false;
@@ -81,8 +82,8 @@ class PageSpeed
 
 					foreach ($manifestList[1] as $index => $path) {
 
-						$cleanOldPath = $randName . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
-						$cleanRealPath = str_replace(
+						$cleanNewPath = $randName . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
+						$cleanOldPath = str_replace(
 							[
 								$this->url,
 								'/',
@@ -92,29 +93,41 @@ class PageSpeed
 								DIRECTORY_SEPARATOR,
 							],
 							$manifestList[2][$index]);
+						$newPath = getcwd() . DIRECTORY_SEPARATOR . $cleanNewPath;
 						$oldPath = getcwd() . DIRECTORY_SEPARATOR . $cleanOldPath;
-						$realPath = getcwd() . DIRECTORY_SEPARATOR . $cleanRealPath;
 
-						if (!file_exists(dirname($realPath)))
-							mkdir(dirname($realPath), 0777, true);
+						if (!file_exists(dirname($oldPath)))
+							mkdir(dirname($oldPath), 0777, true);
+
+						$discard = false;
+
+						list($newW, $newH) = getimagesize($newPath);
+						if (is_file($oldPath)) {
+							list($oldW, $oldH) = getimagesize($oldPath);
+							if ($newW !== $oldW || $newH !== $oldH) $discard = true;
+						}
 
 						// backup.
-						if ($this->backup && is_file($realPath)) {
+						if ($this->backup && is_file($oldPath) && $discard === false) {
 
-							$backupFolder = str_replace(getcwd(), \BACKUP_FOLDER, $realPath);
+							$backupFolder = str_replace(getcwd(), \BACKUP_FOLDER, $oldPath);
 
 							if (!file_exists(dirname($backupFolder)))
 								mkdir(dirname($backupFolder), 0777, true);
 
-							if (!copy($realPath, $backupFolder)) {
-								echo "$realPath can not copied...\n";
+							if (!copy($oldPath, $backupFolder)) {
+								echo "$oldPath can not copied...\n";
 							}
 						}
 
-						if (!copy($oldPath, $realPath)) {
-							echo "$cleanRealPath can not copied...\n";
+						if ($discard === false) {
+							if (!copy($newPath, $oldPath)) {
+								echo "$cleanNewPath can not copied...\n";
+							} else {
+								echo $cleanNewPath . ": $cleanOldPath\r\n";
+							}
 						} else {
-							echo $cleanOldPath . ": $cleanRealPath\r\n";
+							echo "discard: before: {$oldW}x{$oldH} - after: {$newW}x{$newH} - file: $cleanOldPath\r\n";
 						}
 
 					}
@@ -162,12 +175,13 @@ class PageSpeed
 
 	}
 
-	public function rrmdir($dir) {
+	public function rrmdir($dir)
+	{
 		if (is_dir($dir)) {
 			$objects = scandir($dir);
 			foreach ($objects as $object) {
 				if ($object != "." && $object != "..") {
-					if (filetype($dir."/".$object) == "dir") $this->rrmdir($dir."/".$object); else unlink($dir."/".$object);
+					if (filetype($dir . "/" . $object) == "dir") $this->rrmdir($dir . "/" . $object); else unlink($dir . "/" . $object);
 				}
 			}
 			reset($objects);
