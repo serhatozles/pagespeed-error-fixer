@@ -68,6 +68,9 @@ class PageSpeed
 				// get MANIFEST
 				$manifest = file_get_contents($extractPath . DIRECTORY_SEPARATOR . 'MANIFEST');
 
+				// deleting manifest file.
+				unlink($extractPath . DIRECTORY_SEPARATOR . 'MANIFEST');
+
 				preg_match_all('/((?:css|js|image)[a-zA-Z0-9\/._\-\+]+)\: ((?:' . preg_quote($this->baseUrl, '/') . ').*)/mi', $manifest, $manifestList);
 
 				if (count($manifestList[1]) > 0) {
