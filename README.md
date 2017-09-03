@@ -4,7 +4,7 @@ Speed Up Your Website
 ## Docs
 
 - [File Optimization](docs/internals/file-optimization.md)
-- [Server Configiration](docs/internals/server-configiration.md)
+- [Server Configuration](docs/internals/server-configuration.md)
 
 
 ## Result

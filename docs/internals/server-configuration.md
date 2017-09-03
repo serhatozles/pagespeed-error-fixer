@@ -1,7 +1,7 @@
-# Server Configiration
+# Server Configuration
 
 ## Apache
-- Add to your .htaccess file for Lavarage Browser Cache like following code;
+- Add to your .htaccess file for **Lavarage Browser Cache** like following code;
 ```
 <IfModule mod_expires.c>
 ExpiresActive On
@@ -17,7 +17,7 @@ ExpiresByType image/x-icon "access plus 1 year"
 ExpiresDefault "access plus 2 days"
 </IfModule>
 ```
-- Add to your .htaccess file for GZip and Deflate compression like following code;
+- Add to your .htaccess file for **GZip and Deflate Compression** like following code;
 ```
 <IfModule mod_deflate.c>
 SetOutputFilter DEFLATE
